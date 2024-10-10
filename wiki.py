@@ -1,8 +1,14 @@
+"""
+Code to extract all of the "good articles" from Wiki.
+"""
+
 import requests
 from bs4 import BeautifulSoup
 
 URL = "https://en.wikipedia.org/wiki/Wikipedia:Good_articles/all"
-ARTICLE_NAMES_FILE_NAME = "data/good-articles.txt"
+GOOD_ARTICLES_FILE = "data/wiki/good-articles.txt"
+EXTERNAL_LINKS_FILE = "data/wiki/internal-links.txt"
+INTERNA_LINKS_FILE = "data/wiki/external-links.txt"
 
 
 def get_internal_links(page_title):
@@ -61,7 +67,7 @@ def retrieve_good_articles():
     collapsible_contents = soup.find_all(class_="mw-collapsible-content")
 
     # Save text file and append
-    with open(ARTICLE_NAMES_FILE_NAME, "a") as file:
+    with open(GOOD_ARTICLES_FILE, "a") as file:
         for section in collapsible_contents:
             a_tags = section.find_all("a")
             for a in a_tags:
@@ -72,20 +78,20 @@ def extract_links():
     """
     Scrape file and save all the appropriate links.
     """
-    with open(ARTICLE_NAMES_FILE_NAME, "r") as file:
+    with open(GOOD_ARTICLES_FILE, "r") as file:
         # Get the specific query
         for line in file:
             arr = line.split(" ")
             query = arr[0][6:]
 
             # Save all external links
-            with open("data/external-links.txt", "a") as ext_file:
+            with open("data/wiki/external-links.txt", "a") as ext_file:
                 ext_links = get_external_links(query)
                 for ext_link in ext_links:
                     ext_file.write(ext_link + "\n")
 
             # Save all internal links
-            with open("data/internal-links.txt", "a") as int_file:
+            with open("data/wiki/internal-links.txt", "a") as int_file:
                 int_links = get_internal_links(query)
                 for int_link in int_links:
                     int_file.write(int_link + "\n")
