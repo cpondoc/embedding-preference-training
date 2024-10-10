@@ -7,8 +7,8 @@ from bs4 import BeautifulSoup
 
 URL = "https://en.wikipedia.org/wiki/Wikipedia:Good_articles/all"
 GOOD_ARTICLES_FILE = "data/wiki/good-articles.txt"
-EXTERNAL_LINKS_FILE = "data/wiki/internal-links.txt"
-INTERNA_LINKS_FILE = "data/wiki/external-links.txt"
+EXTERNAL_LINKS_FILE = "data/wiki/external-links.txt"
+INTERNAL_LINKS_FILE = "data/wiki/internal-links.txt"
 
 
 def get_internal_links(page_title):
@@ -85,17 +85,33 @@ def extract_links():
             query = arr[0][6:]
 
             # Save all external links
-            with open("data/wiki/external-links.txt", "a") as ext_file:
+            with open(EXTERNAL_LINKS_FILE, "a") as ext_file:
                 ext_links = get_external_links(query)
                 for ext_link in ext_links:
                     ext_file.write(ext_link + "\n")
 
             # Save all internal links
-            with open("data/wiki/internal-links.txt", "a") as int_file:
+            with open(INTERNAL_LINKS_FILE, "a") as int_file:
                 int_links = get_internal_links(query)
                 for int_link in int_links:
                     int_file.write(int_link + "\n")
 
 
+def stats_on_links(file_name):
+    """
+    Obtains numbers about the number of links in each.
+    """
+    # First, get number of unique exterior links.
+    uniq = set()
+    with open(file_name, "r") as f:
+        for line in f:
+            uniq.add(line.strip())
+    return len(uniq)
+
+
 if __name__ == "__main__":
-    extract_links()
+    uniq_ext = stats_on_links(EXTERNAL_LINKS_FILE)
+    print("Number of Unique Exterior Links: " + str(uniq_ext))
+
+    uniq_int = stats_on_links(INTERNAL_LINKS_FILE)
+    print("Number of Unique Interior Links: " + str(uniq_int))
