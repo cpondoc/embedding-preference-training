@@ -8,10 +8,10 @@ import os
 import requests
 import shutil
 
-FILE_NAME = "data/cc-index.paths.gz"
-TEXT_FILE = "data/cc-index.txt"
-INDICES_FOLDER = "data/cc-indices"
-LINKS_FOLDER = "data/cc-links"
+FILE_NAME = "data/common-crawl/cc-index.paths.gz"
+TEXT_FILE = "data/common-crawl/cc-index.txt"
+INDICES_FOLDER = "data/common-crawl/cc-indices"
+LINKS_FOLDER = "data/common-crawl/cc-links"
 
 def unzip_index(zip_name, file_name):
     """
