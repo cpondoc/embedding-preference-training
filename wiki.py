@@ -107,10 +107,10 @@ def stats_on_links(file_name):
     with open(file_name, "r") as f:
         for line in f:
             uniq.add(line.strip())
-    return len(uniq)
+    return uniq, len(uniq)
 
 
 if __name__ == "__main__":
     extract_links(False)
-    uniq_ext = stats_on_links(EXTERNAL_LINKS_FILE)
+    _, uniq_ext = stats_on_links(EXTERNAL_LINKS_FILE)
     print("Number of Unique Exterior Links: " + str(uniq_ext))
