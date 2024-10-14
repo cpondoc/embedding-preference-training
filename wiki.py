@@ -74,7 +74,7 @@ def retrieve_good_articles():
                 file.write(f"{a['href']} - {a.text}\n")
 
 
-def extract_links():
+def extract_links(scrape_internal):
     """
     Scrape file and save all the appropriate links.
     """
@@ -91,10 +91,11 @@ def extract_links():
                     ext_file.write(ext_link + "\n")
 
             # Save all internal links
-            with open(INTERNAL_LINKS_FILE, "a") as int_file:
-                int_links = get_internal_links(query)
-                for int_link in int_links:
-                    int_file.write(int_link + "\n")
+            if scrape_internal:
+                with open(INTERNAL_LINKS_FILE, "a") as int_file:
+                    int_links = get_internal_links(query)
+                    for int_link in int_links:
+                        int_file.write(int_link + "\n")
 
 
 def stats_on_links(file_name):
@@ -110,8 +111,6 @@ def stats_on_links(file_name):
 
 
 if __name__ == "__main__":
+    extract_links(False)
     uniq_ext = stats_on_links(EXTERNAL_LINKS_FILE)
     print("Number of Unique Exterior Links: " + str(uniq_ext))
-
-    uniq_int = stats_on_links(INTERNAL_LINKS_FILE)
-    print("Number of Unique Interior Links: " + str(uniq_int))

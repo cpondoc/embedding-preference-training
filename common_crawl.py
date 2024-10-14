@@ -32,7 +32,7 @@ def obtain_individual_index(path):
     
     # Save if file is successful
     if response.status_code == 200:
-        with open("data/indices/" + file_name, 'wb') as file:
+        with open(INDICES_FOLDER + "/" + file_name, 'wb') as file:
             for chunk in response.iter_content(chunk_size=8192):
                 file.write(chunk)
         print(f'File downloaded successfully as {file_name}')
@@ -94,5 +94,5 @@ def process_links():
                     print(data['url'])
 
 if __name__ == "__main__": 
-    process_links()
+    unzip_indices()
     
