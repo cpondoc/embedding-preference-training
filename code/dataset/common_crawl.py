@@ -10,7 +10,7 @@ import json
 import os
 import requests
 import shutil
-from wiki import *
+from code.dataset.wiki import *
 
 FILE_NAME = "data/common-crawl/cc-index.paths.gz"
 TEXT_FILE = "data/common-crawl/cc-index.txt"
