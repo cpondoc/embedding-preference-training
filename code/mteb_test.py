@@ -9,7 +9,7 @@ import torch
 
 # For safe measure
 torch.cuda.empty_cache()
-MODEL_NAMES = ["HuggingFaceFW/ablation-model-fineweb-edu", "Snowflake/snowflake-arctic-embed-m", "HuggingFaceFW/fineweb-edu-classifier"]
+MODEL_NAMES = ["HuggingFaceFW/ablation-model-fineweb-edu", "Snowflake/snowflake-arctic-embed-m"]
 TASKS = ["AlphaNLI"]
 
 def run_baseline_models():
