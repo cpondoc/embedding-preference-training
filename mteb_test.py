@@ -1,15 +1,23 @@
 from mteb import MTEB
 import mteb
-from models.fineweb import *
+from sentence_transformers import SentenceTransformer
+import torch
+
+torch.cuda.empty_cache()
+
 
 # Define model names
-MODEL_NAMES = ["HuggingFaceFW/ablation-model-fineweb-edu"]
-TASKS = ["HotpotQA"]
+MODEL_NAMES = ["HuggingFaceFW/ablation-model-fineweb-edu", "Snowflake/snowflake-arctic-embed-m", "HuggingFaceFW/fineweb-edu-classifier"]
+MODEL_NAMES = [MODEL_NAMES[1]]
+TASKS = ["AlphaNLI"]
 
 # Iterate through models, load them in using SentenceTransformer, add padding
 for model_name in MODEL_NAMES:
     model = SentenceTransformer(model_name)
-    model.tokenizer.pad_token = model.tokenizer.eos_token
+    if model_name == "HuggingFaceFW/fineweb-edu-classifier":
+        model.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    else:
+        model.tokenizer.pad_token = model.tokenizer.eos_token
 
     # Define tasks
     tasks = mteb.get_tasks(tasks=TASKS, languages=["eng"])
