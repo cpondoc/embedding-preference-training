@@ -12,8 +12,8 @@ torch.cuda.empty_cache()
 MODEL_NAMES = ["Snowflake/snowflake-arctic-embed-m"]
 # MODEL_NAMES = ["HuggingFaceFW/ablation-model-fineweb-edu", "Snowflake/snowflake-arctic-embed-m"]
 # TASKS = ["AlphaNLI"]
-RETRIEVAL_TASKS = ["ClimateFEVER"]
-# RETRIEVAL_TASKS = ["ArguAna"]
+# RETRIEVAL_TASKS = ["ClimateFEVER"]
+RETRIEVAL_TASKS = ["ArguAna"]
 
 def run_baseline_models():
     """
