@@ -9,8 +9,11 @@ import torch
 
 # For safe measure
 torch.cuda.empty_cache()
-MODEL_NAMES = ["HuggingFaceFW/ablation-model-fineweb-edu", "Snowflake/snowflake-arctic-embed-m"]
-TASKS = ["AlphaNLI"]
+MODEL_NAMES = ["Snowflake/snowflake-arctic-embed-m"]
+# MODEL_NAMES = ["HuggingFaceFW/ablation-model-fineweb-edu", "Snowflake/snowflake-arctic-embed-m"]
+# TASKS = ["AlphaNLI"]
+RETRIEVAL_TASKS = ["ClimateFEVER"]
+# RETRIEVAL_TASKS = ["ArguAna"]
 
 def run_baseline_models():
     """
@@ -24,10 +27,11 @@ def run_baseline_models():
         if model_name == "HuggingFaceFW/fineweb-edu-classifier":
             model.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
         else:
-            model.tokenizer.pad_token = model.tokenizer.eos_token
+            model.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            # model.tokenizer.pad_token = model.tokenizer.eos_token
 
         # Define tasks, run eval
-        tasks = mteb.get_tasks(tasks=TASKS, languages=["eng"])
+        tasks = mteb.get_tasks(tasks=RETRIEVAL_TASKS, languages=["eng"])
         evaluation = MTEB(tasks=tasks)
         evaluation.run(
             model,
@@ -48,7 +52,7 @@ def run_custom_model():
     model = SentenceTransformer(modules=[custom_model])
     
     # Define tasks, run evaluation
-    tasks = mteb.get_tasks(tasks=TASKS, languages=["eng"])
+    tasks = mteb.get_tasks(tasks=RETRIEVAL_TASKS, languages=["eng"])
     evaluation = MTEB(tasks=tasks)
     evaluation.run(
         model,
@@ -60,4 +64,4 @@ def run_custom_model():
         }
     )
     
-run_custom_model()
+run_baseline_models()
