@@ -1,4 +1,7 @@
-# Adapted from: https://huggingface.co/HuggingFaceFW/fineweb-edu-classifier/blob/main/src/train_edu_bert.py
+"""
+Code to train a binary classifier. Adapted from: https://huggingface.co/HuggingFaceFW/fineweb-edu-classifier/blob/main/src/train_edu_bert.py.
+"""
+
 from transformers import (
     AutoTokenizer,
     DataCollatorWithPadding,
@@ -13,8 +16,18 @@ import argparse
 import os
 from sklearn.metrics import classification_report, confusion_matrix
 
+"""
+Constants for the dataset.
+"""
+DATASET_PATH = "data/wiki-vs/"
+BASE_MODEL_NAME = "Snowflake/snowflake-arctic-embed-m"
+CHECKPOINT_DIR = "scratch/sample-run/"
+
 
 def compute_metrics(eval_pred):
+    """
+    Compute metrics such as precision, recall, and accuracy.
+    """
     precision_metric = evaluate.load("precision")
     recall_metric = evaluate.load("recall")
     f1_metric = evaluate.load("f1")
@@ -45,13 +58,13 @@ def compute_metrics(eval_pred):
     }
 
 
-dataset_path = "data/wiki-vs/"
-
-
-def main(args):
+def main():
+    """
+    Load in the datasets and perform training.
+    """
     # Paths to each class folder
-    good_path = dataset_path + "good/*"
-    bad_path = dataset_path + "bad/*"
+    good_path = DATASET_PATH + "good/*"
+    bad_path = DATASET_PATH + "bad/*"
 
     # Load the "good" and "bad" folders as separate datasets
     good_dataset = load_dataset(
@@ -72,7 +85,7 @@ def main(args):
         lambda _: {"label": 0}, num_proc=8
     )  # Label "bad" as 0
 
-    # Concatenate the "good" and "bad" datasets
+    # Concatenate the "good" and "bad" datasets (only selecting 15k from each dataset right now)
     good_sample = good_dataset.shuffle(seed=42).select(range(15000))
     bad_sample = bad_dataset.shuffle(seed=42).select(range(15000))
     dataset = concatenate_datasets([good_sample, bad_sample])
@@ -83,30 +96,33 @@ def main(args):
     train_dataset = train_test_split["train"]
     test_dataset = train_test_split["test"]
 
-    tokenizer = AutoTokenizer.from_pretrained(args.base_model_name)
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_NAME)
 
     def preprocess(examples):
         batch = tokenizer(examples["text"], truncation=True, padding=True)
         batch["labels"] = examples["label"]
         return batch
 
+    # Preprocess each of the datasets
     train_dataset = train_dataset.map(preprocess, batched=True)
     test_dataset = test_dataset.map(preprocess, batched=True)
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+
+    # Initialize the model
     model = AutoModelForSequenceClassification.from_pretrained(
-        args.base_model_name,
+        BASE_MODEL_NAME,
         num_labels=2,
         classifier_dropout=0.0,
         hidden_dropout_prob=0.0,
     )
-
     for param in model.bert.embeddings.parameters():
         param.requires_grad = False
     for param in model.bert.encoder.parameters():
         param.requires_grad = False
 
+    # Initialize training arguments
     training_args = TrainingArguments(
-        output_dir=args.checkpoint_dir,
+        output_dir=CHECKPOINT_DIR,
         evaluation_strategy="steps",
         save_strategy="steps",
         eval_steps=1000,
@@ -122,7 +138,6 @@ def main(args):
         greater_is_better=True,
         bf16=True,
     )
-
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -133,22 +148,10 @@ def main(args):
         compute_metrics=compute_metrics,
     )
 
+    # Train and save the model
     trainer.train()
-    trainer.save_model(os.path.join(args.checkpoint_dir, "final"))
+    trainer.save_model(os.path.join(CHECKPOINT_DIR, "final"))
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--base_model_name", type=str, default="Snowflake/snowflake-arctic-embed-m"
-    )
-    parser.add_argument(
-        "--dataset_name",
-        type=str,
-        default="HuggingFaceFW/fineweb-edu-llama3-annotations",
-    )
-    parser.add_argument("--target_column", type=str, default="score")
-    parser.add_argument("--checkpoint_dir", type=str, default="scratch/sample/")
-    args = parser.parse_args()
-
-    main(args)
+    main()
