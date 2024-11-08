@@ -12,7 +12,6 @@ from transformers import (
 from datasets import load_dataset, concatenate_datasets, ClassLabel
 import numpy as np
 import evaluate
-import argparse
 import os
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -129,7 +128,7 @@ def main():
         save_steps=1000,
         logging_steps=100,
         learning_rate=3e-4,
-        num_train_epochs=20,
+        num_train_epochs=10,
         seed=0,
         per_device_train_batch_size=256,
         per_device_eval_batch_size=128,
