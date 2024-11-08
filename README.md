@@ -22,6 +22,14 @@ For evaluation run the `rerank.py` script from the top directory:
 python3 code/eval/rerank.py
 ```
 
+### Scraping Data
+
+This code is still being generalized, but in general, scripts to extract and save data will be found in `dataset/scraping/scrape_*.py`:
+
+```bash
+python3 code/dataset/scraping/scrape_gb_wiki.py
+```
+
 ### Train Binary Classifier
 
 To experiment with training binary classifiers, run the `train_classifier.py` script from the top directory:
