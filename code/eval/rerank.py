@@ -7,11 +7,11 @@ import mteb
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
 # Define reranker, set of base models that we can change
-cross_encoder = CrossEncoder("HuggingFaceTB/fineweb-edu-classifier")
+cross_encoder = CrossEncoder("scratch/sample-run/final")
 BASE_MODELS = ["Snowflake/snowflake-arctic-embed-m"]
 
 # Also define the set of tasks
-TASKS = ["FiQA2018"]
+TASKS = ["ClimateFEVER", "QuoraRetrieval"]
 tasks = mteb.get_tasks(tasks=TASKS, languages=["eng"])
 
 # Iterate through each model, set up the initial encoder
@@ -33,7 +33,7 @@ for base_model in BASE_MODELS:
             eval_splits=eval_splits,
             top_k=5,
             save_predictions=True,
-            output_folder="results/after-rerank/" + base_model,
+            output_folder="results/after-rerank/test-classifier",
             previous_results=f"results/before-rerank/"
             + base_model
             + "/"

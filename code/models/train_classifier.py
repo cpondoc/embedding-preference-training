@@ -1,7 +1,3 @@
-"""
-Code to train a binary classifier. Adapted from: https://huggingface.co/HuggingFaceFW/fineweb-edu-classifier/blob/main/src/train_edu_bert.py.
-"""
-
 from transformers import (
     AutoTokenizer,
     DataCollatorWithPadding,
@@ -14,6 +10,7 @@ import numpy as np
 import evaluate
 import os
 from sklearn.metrics import classification_report, confusion_matrix
+import torch
 
 """
 Constants for the dataset.
@@ -33,8 +30,8 @@ def compute_metrics(eval_pred):
     accuracy_metric = evaluate.load("accuracy")
 
     logits, labels = eval_pred
-    preds = np.round(logits.squeeze()).clip(0, 5).astype(int)
-    labels = np.round(labels.squeeze()).astype(int)
+    preds = (logits.squeeze() > 0.5).astype(int)  # Changed to proper binary threshold
+    labels = labels.astype(int)
     precision = precision_metric.compute(
         predictions=preds, references=labels, average="macro"
     )["precision"]
@@ -84,12 +81,12 @@ def main():
         lambda _: {"label": 0}, num_proc=8
     )  # Label "bad" as 0
 
-    # Concatenate the "good" and "bad" datasets (only selecting 15k from each dataset right now)
+    # Concatenate the "good" and "bad" datasets
     good_sample = good_dataset.shuffle(seed=42).select(range(15000))
     bad_sample = bad_dataset.shuffle(seed=42).select(range(15000))
     dataset = concatenate_datasets([good_sample, bad_sample])
 
-    # Shuffle the dataset (optional, if desired for training)
+    # Shuffle the dataset
     dataset = dataset.shuffle(seed=42)
     train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
     train_dataset = train_test_split["train"]
@@ -98,22 +95,31 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_NAME)
 
     def preprocess(examples):
-        batch = tokenizer(examples["text"], truncation=True, padding=True)
-        batch["labels"] = examples["label"]
+        batch = tokenizer(
+            examples["text"],
+            truncation=True,
+            padding=True,
+            return_tensors="pt"  # Ensure we get PyTorch tensors
+        )
+        # Convert labels to float32 tensors
+        batch["labels"] = torch.tensor(examples["label"], dtype=torch.float32)
         return batch
 
     # Preprocess each of the datasets
-    train_dataset = train_dataset.map(preprocess, batched=True)
-    test_dataset = test_dataset.map(preprocess, batched=True)
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    train_dataset = train_dataset.map(preprocess, batched=True, remove_columns=train_dataset.column_names)
+    test_dataset = test_dataset.map(preprocess, batched=True, remove_columns=test_dataset.column_names)
+    data_collator = DataCollatorWithPadding(tokenizer=tokenizer, return_tensors="pt")
 
     # Initialize the model
     model = AutoModelForSequenceClassification.from_pretrained(
         BASE_MODEL_NAME,
-        num_labels=2,
+        num_labels=1,  # Binary classification
+        problem_type="regression",  # This ensures the model expects float labels
         classifier_dropout=0.0,
         hidden_dropout_prob=0.0,
     )
+    
+    # Freeze BERT layers
     for param in model.bert.embeddings.parameters():
         param.requires_grad = False
     for param in model.bert.encoder.parameters():
@@ -122,7 +128,7 @@ def main():
     # Initialize training arguments
     training_args = TrainingArguments(
         output_dir=CHECKPOINT_DIR,
-        evaluation_strategy="steps",
+        eval_strategy="steps",  # Updated from evaluation_strategy
         save_strategy="steps",
         eval_steps=1000,
         save_steps=1000,
@@ -137,6 +143,7 @@ def main():
         greater_is_better=True,
         bf16=True,
     )
+    
     trainer = Trainer(
         model=model,
         args=training_args,
