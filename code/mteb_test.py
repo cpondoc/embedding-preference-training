@@ -1,6 +1,7 @@
 """
 Code to benchmark some models on retrieval tasks.
 """
+
 from mteb import MTEB
 import mteb
 from sentence_transformers import SentenceTransformer
@@ -15,6 +16,7 @@ MODEL_NAMES = ["Snowflake/snowflake-arctic-embed-m"]
 # RETRIEVAL_TASKS = ["ClimateFEVER"]
 RETRIEVAL_TASKS = ["ArguAna"]
 
+
 def run_baseline_models():
     """
     Run some of the already accessible models on Hugging Face.
@@ -22,12 +24,12 @@ def run_baseline_models():
     # Initialize a SentenceTransformer for each model
     for model_name in MODEL_NAMES:
         model = SentenceTransformer(model_name)
-        
+
         # Add a padding token if we need it
         if model_name == "HuggingFaceFW/fineweb-edu-classifier":
-            model.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            model.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
         else:
-            model.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            model.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
             # model.tokenizer.pad_token = model.tokenizer.eos_token
 
         # Define tasks, run eval
@@ -39,9 +41,10 @@ def run_baseline_models():
             save_predictions=True,
             output_folder="results",
             encode_kwargs={
-                'batch_size': 4,
-            }
+                "batch_size": 4,
+            },
         )
+
 
 def run_custom_model():
     """
@@ -50,7 +53,7 @@ def run_custom_model():
     # Define custom model
     custom_model = SnowflakeModelWithoutClassifier()
     model = SentenceTransformer(modules=[custom_model])
-    
+
     # Define tasks, run evaluation
     tasks = mteb.get_tasks(tasks=RETRIEVAL_TASKS, languages=["eng"])
     evaluation = MTEB(tasks=tasks)
@@ -60,8 +63,9 @@ def run_custom_model():
         save_predictions=True,
         output_folder="results",
         encode_kwargs={
-            'batch_size': 4,
-        }
+            "batch_size": 4,
+        },
     )
-    
+
+
 run_baseline_models()

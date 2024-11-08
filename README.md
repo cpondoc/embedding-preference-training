@@ -11,3 +11,13 @@ python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
 ```
+
+## To Run
+
+### Evaluating Embedding Models
+
+For evaluation run the `rerank.py` script from the top directory:
+
+```bash
+python3 code/eval/rerank.py
+```

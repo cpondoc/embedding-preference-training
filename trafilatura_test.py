@@ -1,6 +1,7 @@
 # import the necessary functions
 from trafilatura import fetch_url, extract
 
+
 def use_trafilatura(url):
     """
     Use Trafilatura.
@@ -12,19 +13,19 @@ def use_trafilatura(url):
     result = extract(downloaded)
     return result
 
-with open('data/external-links.txt', 'r', encoding='utf-8') as file:
+
+with open("data/external-links.txt", "r", encoding="utf-8") as file:
     counter = 0
     for line in file:
         url = line.strip()
-        
+
         # Extract content using Trafilatura
         content = use_trafilatura(url)
         output_file = "data/good/good-" + str(counter) + ".txt"
-        
+
         # Save the extracted content if any
         if content:
-            with open(output_file, 'a', encoding='utf-8') as outfile:
+            with open(output_file, "a", encoding="utf-8") as outfile:
                 outfile.write(content)
-        
+
         counter += 1
-  

@@ -1,6 +1,7 @@
 """
 Script to use the Fineweb classifier as a pure reranker.
 """
+
 from mteb import MTEB
 import mteb
 from sentence_transformers import CrossEncoder, SentenceTransformer
@@ -33,5 +34,9 @@ for base_model in BASE_MODELS:
             top_k=5,
             save_predictions=True,
             output_folder="results/after-rerank/" + base_model,
-            previous_results=f"results/before-rerank/" + base_model + "/" + task + "_default_predictions.json",
+            previous_results=f"results/before-rerank/"
+            + base_model
+            + "/"
+            + task
+            + "_default_predictions.json",
         )

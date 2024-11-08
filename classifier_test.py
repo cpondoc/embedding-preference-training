@@ -44,7 +44,9 @@ def compute_metrics(eval_pred):
         "accuracy": accuracy,
     }
 
+
 dataset_path = "data/wiki-vs/"
+
 
 def main(args):
     # Paths to each class folder
@@ -56,19 +58,24 @@ def main(args):
         "text",
         data_files={"train": good_path},
         split="train",
-        cache_dir="scratch/cosmo/cache/"
-    ).map(lambda _: {"label": 1}, num_proc=8)  # Label "good" as 1
-    
-    
+        cache_dir="scratch/cosmo/cache/",
+    ).map(
+        lambda _: {"label": 1}, num_proc=8
+    )  # Label "good" as 1
+
     bad_dataset = load_dataset(
         "text",
         data_files={"train": bad_path},
         split="train",
-        cache_dir="scratch/cosmo/cache/"
-    ).map(lambda _: {"label": 0}, num_proc=8)  # Label "bad" as 0
+        cache_dir="scratch/cosmo/cache/",
+    ).map(
+        lambda _: {"label": 0}, num_proc=8
+    )  # Label "bad" as 0
 
     # Concatenate the "good" and "bad" datasets
-    dataset = concatenate_datasets([good_dataset, bad_dataset])
+    good_sample = good_dataset.shuffle(seed=42).select(range(15000))
+    bad_sample = bad_dataset.shuffle(seed=42).select(range(15000))
+    dataset = concatenate_datasets([good_sample, bad_sample])
 
     # Shuffle the dataset (optional, if desired for training)
     dataset = dataset.shuffle(seed=42)
@@ -85,9 +92,13 @@ def main(args):
 
     train_dataset = train_dataset.map(preprocess, batched=True)
     test_dataset = test_dataset.map(preprocess, batched=True)
-    # dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'labels'])
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-    model = AutoModelForSequenceClassification.from_pretrained(args.base_model_name, num_labels=2, classifier_dropout=0.0, hidden_dropout_prob=0.0)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        args.base_model_name,
+        num_labels=2,
+        classifier_dropout=0.0,
+        hidden_dropout_prob=0.0,
+    )
 
     for param in model.bert.embeddings.parameters():
         param.requires_grad = False
@@ -102,7 +113,7 @@ def main(args):
         save_steps=1000,
         logging_steps=100,
         learning_rate=3e-4,
-        num_train_epochs=2,
+        num_train_epochs=20,
         seed=0,
         per_device_train_batch_size=256,
         per_device_eval_batch_size=128,
@@ -128,8 +139,14 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_model_name", type=str, default="Snowflake/snowflake-arctic-embed-m")
-    parser.add_argument("--dataset_name", type=str, default="HuggingFaceFW/fineweb-edu-llama3-annotations")
+    parser.add_argument(
+        "--base_model_name", type=str, default="Snowflake/snowflake-arctic-embed-m"
+    )
+    parser.add_argument(
+        "--dataset_name",
+        type=str,
+        default="HuggingFaceFW/fineweb-edu-llama3-annotations",
+    )
     parser.add_argument("--target_column", type=str, default="score")
     parser.add_argument("--checkpoint_dir", type=str, default="scratch/sample/")
     args = parser.parse_args()

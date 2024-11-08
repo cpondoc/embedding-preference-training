@@ -64,6 +64,7 @@ def get_good_articles():
 
     return urls, titles
 
+
 def get_bad_articles(good_titles):
     """
     Get random Wikipedia articles.
@@ -74,11 +75,12 @@ def get_bad_articles(good_titles):
         if new_rando not in good_titles:
             titles.add(new_rando)
             urls.append(new_url)
-            
+
             with open("data/bad-wiki.txt", "a") as file:
                 file.write(f"{new_url} - {new_rando}\n")
         print(len(good_titles) - len(titles))
     return urls, titles
+
 
 def read_bad_articles():
     """
@@ -92,14 +94,18 @@ def read_bad_articles():
             titles.append(get_wikipedia_title_from_url(url))
 
     return urls, titles
-    
+
+
 def save_to_file(content, article_type, title):
     """
     Save content to a text file.
     """
-    with open("data/wiki-vs/" + article_type + "/" + title + ".txt" , "w", encoding="utf-8") as file:
+    with open(
+        "data/wiki-vs/" + article_type + "/" + title + ".txt", "w", encoding="utf-8"
+    ) as file:
         if content:
             file.write(content)
+
 
 if __name__ == "__main__":
     good_urls, good_titles = get_good_articles()
@@ -108,7 +114,7 @@ if __name__ == "__main__":
         url, title = good_urls[i], good_titles[i]
         content = use_trafilatura(url)
         save_to_file(content, "good", title)
-    
+
     for i in tqdm(range(len(bad_urls))):
         url, title = bad_urls[i], bad_titles[i]
         content = use_trafilatura(url)
