@@ -3,51 +3,51 @@ import requests
 from trafilatura import fetch_url, extract, html2txt
 from tqdm import tqdm
 from urllib.parse import unquote
+from code.dataset.scraping import *
+
+# def get_wikipedia_title_from_url(url):
+#     # Split the URL by '/' and get the last part, which is the title
+#     title = url.split("/")[-1]
+#     # Decode any URL-encoded characters (e.g., underscores to spaces)
+#     title = unquote(title).replace("_", " ")
+#     return title
 
 
-def get_wikipedia_title_from_url(url):
-    # Split the URL by '/' and get the last part, which is the title
-    title = url.split("/")[-1]
-    # Decode any URL-encoded characters (e.g., underscores to spaces)
-    title = unquote(title).replace("_", " ")
-    return title
+# def use_trafilatura(url):
+#     """
+#     Use Trafilatura.
+#     """
+#     # grab a HTML file to extract data from
+#     downloaded = fetch_url(url)
+
+#     # output main content and comments as plain text
+#     result = extract(downloaded)
+#     return result
 
 
-def use_trafilatura(url):
-    """
-    Use Trafilatura.
-    """
-    # grab a HTML file to extract data from
-    downloaded = fetch_url(url)
+# def get_random_wikipedia_page():
+#     url = "https://en.wikipedia.org/w/api.php"
+#     params = {
+#         "action": "query",
+#         "format": "json",
+#         "generator": "random",
+#         "grnnamespace": 0,  # 0 for articles, excluding talk pages, etc.
+#         "prop": "extracts",  # Get the content summary
+#         "explaintext": True,  # Plain text format
+#         "exintro": True,  # Only fetch the introduction
+#     }
 
-    # output main content and comments as plain text
-    result = extract(downloaded)
-    return result
+#     response = requests.get(url, params=params)
+#     data = response.json()
 
+#     pages = data["query"]["pages"]
+#     page = next(iter(pages.values()))  # Get the first (random) page
+#     title = page.get("title", "No title")
 
-def get_random_wikipedia_page():
-    url = "https://en.wikipedia.org/w/api.php"
-    params = {
-        "action": "query",
-        "format": "json",
-        "generator": "random",
-        "grnnamespace": 0,  # 0 for articles, excluding talk pages, etc.
-        "prop": "extracts",  # Get the content summary
-        "explaintext": True,  # Plain text format
-        "exintro": True,  # Only fetch the introduction
-    }
+#     # Build the full URL to the Wikipedia page
+#     page_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
 
-    response = requests.get(url, params=params)
-    data = response.json()
-
-    pages = data["query"]["pages"]
-    page = next(iter(pages.values()))  # Get the first (random) page
-    title = page.get("title", "No title")
-
-    # Build the full URL to the Wikipedia page
-    page_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
-
-    return title, page_url
+#     return title, page_url
 
 
 def get_good_articles():
@@ -119,4 +119,3 @@ if __name__ == "__main__":
         url, title = bad_urls[i], bad_titles[i]
         content = use_trafilatura(url)
         save_to_file(content, "bad", title)
-    # bad_urls, bad_titles = get_bad_articles(good_titles)

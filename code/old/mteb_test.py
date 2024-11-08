@@ -5,7 +5,7 @@ Code to benchmark some models on retrieval tasks.
 from mteb import MTEB
 import mteb
 from sentence_transformers import SentenceTransformer
-from models.fineweb_noclass import *
+from code.old.fineweb_noclass import *
 import torch
 
 # For safe measure
