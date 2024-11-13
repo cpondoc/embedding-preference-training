@@ -25,5 +25,5 @@ for base_model in BASE_MODELS:
             dual_encoder,
             eval_splits=eval_splits,
             save_predictions=True,
-            output_folder="results/update-score/" + base_model,
+            output_folder="results/quality-scores/" + base_model,
         )

@@ -12,6 +12,11 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
+We also need to install the custom version of MTEB, which is defined as a submodule:
+```bash
+pip install mteb/
+```
+
 ## To Run
 
 ### Evaluating Embedding Models
