@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 BASE_MODELS = ["Snowflake/snowflake-arctic-embed-m"]
 
 # Also define the set of tasks
-TASKS = ["ClimateFEVER", "ArguAna", "FiQA2018", "QuoraRetrieval"]
+TASKS = ["ArguAna", "FiQA2018", "QuoraRetrieval"]
 tasks = mteb.get_tasks(tasks=TASKS, languages=["eng"])
 
 # Iterate through each model, set up the initial encoder
@@ -25,5 +25,5 @@ for base_model in BASE_MODELS:
             dual_encoder,
             eval_splits=eval_splits,
             save_predictions=True,
-            output_folder="results/quality-scores/" + base_model,
+            output_folder="results/gb-wiki-scores/" + base_model,
         )
