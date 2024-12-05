@@ -21,6 +21,9 @@ from tqdm import tqdm
 
 # Function to download a file
 def download_file(url, output_path):
+    """
+    Download a zipped file.
+    """
     print(f"Downloading {url}...")
     response = requests.get(url, stream=True)
     if response.status_code == 200:
@@ -34,6 +37,9 @@ def download_file(url, output_path):
 
 # Function to decompress a .gz file
 def decompress_gz(file_path, output_path):
+    """
+    Function to decompress gz.
+    """
     print(f"Decompressing {file_path}...")
     with gzip.open(file_path, "rb") as f_in:
         with open(output_path, "wb") as f_out:
@@ -42,28 +48,25 @@ def decompress_gz(file_path, output_path):
     return output_path
 
 
-"""
-Let's first get all the WARC paths.
-"""
-indices = []
-with open("data/common-crawl/warc.paths.txt", "r") as file:
-    # Loop through each line in the file
-    for line in file:
-        # Process each line (you can modify this as needed)
-        line = line.strip()  # .strip() removes leading/trailing whitespace
-        if line[-3:] == ".gz":
-            indices.append(line)
+def get_warc_indices():
+    """
+    Retrieve all the WARC paths.
+    """
+    # Loop through each line in the file, which contains WARC paths
+    indices = []
+    with open("data/common-crawl/warc.paths.txt", "r") as file:
+        for line in file:
 
-"""
-Now let's process an individual WARC path.
-"""
-# Process path of WARC into usable things.
-path = indices[0]
-warc_paths_url = "https://data.commoncrawl.org/" + path
-compressed_file = "data/common-crawl/" + path.split("/")[-1]
+            # Process each line (you can modify this as needed)
+            line = line.strip()
+            if line[-3:] == ".gz":
+                indices.append(line)
+    return indices
+
 
 # Now download and compress
 # download_file(warc_paths_url, compressed_file)
+
 
 def clean_filename(url):
     """
@@ -97,6 +100,7 @@ def get_fineweb_urls():
     all_urls.add(url)
     return all_urls
 
+
 def extract_html_pages(warc_path, output_dir="data/random-cc"):
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
@@ -110,7 +114,7 @@ def extract_html_pages(warc_path, output_dir="data/random-cc"):
                 # Check if it's a response record
                 if record.rec_headers.get_header("WARC-Type") == "response":
                     target_uri = record.rec_headers.get_header("WARC-Target-URI")
-                    
+
                     # Read the payload
                     try:
                         payload = record.content_stream()
@@ -142,13 +146,19 @@ def extract_html_pages(warc_path, output_dir="data/random-cc"):
 
 
 if __name__ == "__main__":
+
     # Configure logging
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
-    # Your WARC file path
+    # Process path of WARC into usable things.
+    indices = get_warc_indices()
+    path = indices[0]
+    warc_paths_url = "https://data.commoncrawl.org/" + path
+    compressed_file = "data/common-crawl/" + path.split("/")[-1]
     warc_path = compressed_file
 
+    # Extract HTML pages
     print(f"Starting extraction from {warc_path}")
     extract_html_pages(warc_path)

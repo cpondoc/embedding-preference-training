@@ -33,6 +33,7 @@ This code is still being generalized, but in general, scripts to extract and sav
 
 ```bash
 python3 code/dataset/scraping/scrape_gb_wiki.py
+python3 code/dataset/extract_warcs.py
 ```
 
 ### Train Binary Classifier

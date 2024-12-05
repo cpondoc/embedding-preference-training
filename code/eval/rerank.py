@@ -19,19 +19,20 @@ TASKS = ["ArguAna", "FiQA2018", "QuoraRetrieval"]
 tasks = mteb.get_tasks(tasks=TASKS, languages=["eng"])
 
 # Iterate through each model, set up the initial encoder
-for quality_p in [0.95, 0.9, 0.85, 0.8]:
+for quality_p in [0.96, 0.97, 0.98, 0.99]:
     for key, value in QUALITY_MODELS.items():
         dual_encoder = SentenceTransformer(BASE_MODEL)
         eval_splits = ["test"]
 
         # Run eval by first doing the results, then reranking
         for task in TASKS:
+            print("results/" + value + "/" + str(quality_p) + "/")
             evaluation = MTEB(tasks=[task])
             evaluation.run(
                 dual_encoder,
                 eval_splits=eval_splits,
                 save_predictions=True,
-                output_folder="results/" + value + "/" + str(quality_p),
+                output_folder="results/" + value + "/" + str(quality_p) + "/",
                 quality_p=quality_p,
                 quality_classifier=key,
             )
