@@ -31,6 +31,6 @@ for quality_p in [0.95, 0.9, 0.85, 0.8]:
                 eval_splits=eval_splits,
                 save_predictions=True,
                 output_folder="results/" + value + "/" + str(quality_p),
-                quality_p = quality_p,
-                quality_classifier = key,
+                quality_p=quality_p,
+                quality_classifier=key,
             )

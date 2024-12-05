@@ -1,28 +1,42 @@
 """
 Code to extract WARCs and use a random subset of them.
 """
+
 import requests
 import gzip
 import shutil
 import os
+from warcio.archiveiterator import ArchiveIterator
+from urllib.parse import urlparse
+from io import BytesIO
+import trafilatura
+import langdetect
+import logging
+from datetime import datetime
+import re
+from collections import defaultdict
+from datasets import load_dataset
+from tqdm import tqdm
+
 
 # Function to download a file
 def download_file(url, output_path):
     print(f"Downloading {url}...")
     response = requests.get(url, stream=True)
     if response.status_code == 200:
-        with open(output_path, 'wb') as f:
+        with open(output_path, "wb") as f:
             shutil.copyfileobj(response.raw, f)
         print(f"Downloaded: {output_path}")
     else:
         print(f"Failed to download {url}: {response.status_code}")
     return output_path
 
+
 # Function to decompress a .gz file
 def decompress_gz(file_path, output_path):
     print(f"Decompressing {file_path}...")
-    with gzip.open(file_path, 'rb') as f_in:
-        with open(output_path, 'wb') as f_out:
+    with gzip.open(file_path, "rb") as f_in:
+        with open(output_path, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
     print(f"Decompressed to: {output_path}")
     return output_path
@@ -32,7 +46,7 @@ def decompress_gz(file_path, output_path):
 Let's first get all the WARC paths.
 """
 indices = []
-with open('data/common-crawl/warc.paths.txt', 'r') as file:
+with open("data/common-crawl/warc.paths.txt", "r") as file:
     # Loop through each line in the file
     for line in file:
         # Process each line (you can modify this as needed)
@@ -51,137 +65,90 @@ compressed_file = "data/common-crawl/" + path.split("/")[-1]
 # Now download and compress
 # download_file(warc_paths_url, compressed_file)
 
-"""
-Now that we have the decompressed file, let's try to read into it.
-"""
-from warcio.archiveiterator import ArchiveIterator
-import os
-from urllib.parse import urlparse
-from io import BytesIO
-import logging
-from datetime import datetime
-import re
-from collections import defaultdict
-
-def parse_http_header(content):
-    """Parse HTTP headers from raw content."""
-    try:
-        # Split headers from body
-        header_end = content.find(b'\r\n\r\n')
-        if header_end == -1:
-            return None, content
-            
-        headers = content[:header_end]
-        body = content[header_end + 4:]
-        
-        # Parse headers
-        headers_dict = {}
-        for line in headers.decode('utf-8', 'ignore').split('\r\n'):
-            if ':' in line:
-                key, value = line.split(':', 1)
-                headers_dict[key.strip().lower()] = value.strip()
-                
-        return headers_dict, body
-    except Exception as e:
-        logging.error(f"Error parsing HTTP headers: {e}")
-        return None, content
-
 def clean_filename(url):
-    """Create a safe filename from URL."""
+    """
+    Create a safe filename from URL.
+    """
     # Remove protocol and special characters
-    name = re.sub(r'[^\w\-_.]', '_', url)
-    # Limit length
-    return name[:150] + '.html'
+    name = re.sub(r"[^\w\-_.]", "_", url)
+    return name[:150] + ".txt"
 
-def extract_html_pages(warc_path, output_dir='extracted_html'):
+
+def is_english(text):
+    """
+    Use LangDetect to use only English sources.
+    """
+    try:
+        return langdetect.detect(text) == "en"
+    except:
+        return False
+
+
+def get_fineweb_urls():
+    """
+    Get all URLs for Fineweb.
+    """
+    fw = load_dataset(
+        "HuggingFaceFW/fineweb-edu", name="sample-10BT", split="train", streaming=True
+    )
+    all_urls = set()
+    for example in tqdm(fw, desc="Processing Fineweb URLs"):
+        url = example["url"]
+    all_urls.add(url)
+    return all_urls
+
+def extract_html_pages(warc_path, output_dir="data/random-cc"):
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
-    
-    # Statistics
-    stats = {
-        'total_records': 0,
-        'response_records': 0,
-        'html_pages': 0,
-        'other_content': 0
-    }
-    
+    all_urls = get_fineweb_urls()
+
+    # Open the WARC, iterate through each record
     try:
-        with open(warc_path, 'rb') as stream:
+        with open(warc_path, "rb") as stream:
             for record in ArchiveIterator(stream):
-                stats['total_records'] += 1
-                
-                if stats['total_records'] % 100 == 0:
-                    print(f"Processed {stats['total_records']} records...")
-                
+
                 # Check if it's a response record
-                if record.rec_headers.get_header('WARC-Type') == 'response':
-                    stats['response_records'] += 1
-                    target_uri = record.rec_headers.get_header('WARC-Target-URI')
+                if record.rec_headers.get_header("WARC-Type") == "response":
+                    target_uri = record.rec_headers.get_header("WARC-Target-URI")
                     
+                    # Read the payload
                     try:
-                        # Get the raw content
-                        content = record.content_stream().read()
-                        print(content)
-                        exit()
-                        # Parse HTTP headers and body
-                        headers, body = parse_http_header(content)
-                        
-                        if headers:
-                            content_type = headers.get('content-type', '').lower()
-                            # Check if it's HTML content
-                            if 'text/html' in content_type:
-                                try:
-                                    # Decode the HTML content
-                                    html_content = body.decode('utf-8', 'ignore')
-                                    
-                                    if html_content.strip():
-                                        stats['html_pages'] += 1
-                                        
-                                        # Create filename from URL
-                                        if target_uri:
-                                            filename = clean_filename(target_uri)
-                                            filepath = os.path.join(output_dir, filename)
-                                            
-                                            # Save the HTML content
-                                            with open(filepath, 'w', encoding='utf-8') as f:
-                                                f.write(html_content)
-                                            
-                                            print(f"\nSaved HTML from {target_uri}")
-                                            print(f"Saved to: {filepath}")
-                                            print("Content preview:")
-                                            print(html_content[:500])
-                                            print("-" * 80)
-                                            
-                                except Exception as e:
-                                    logging.error(f"Error processing HTML for {target_uri}: {e}")
-                            else:
-                                stats['other_content'] += 1
-                                print(f"\nSkipping non-HTML content type: {content_type}")
-                                print(f"URL: {target_uri}")
-                    
+                        payload = record.content_stream()
+                        payload_text = payload.read().decode("utf-8", errors="ignore")
+
+                        # Split out the body if it's an HTTP response
+                        if "\r\n\r\n" in payload_text:
+                            _, body = payload_text.split("\r\n\r\n", 1)
+                        else:
+                            body = payload_text
+
+                        # Use trafilatura to extract main content, check if English
+                        content = trafilatura.extract(body)
+                        if content and is_english(content):
+
+                            # Save to a file
+                            if target_uri not in all_urls:
+                                filename = clean_filename(target_uri)
+                                filepath = os.path.join(output_dir, filename)
+                                with open(filepath, "w", encoding="utf-8") as f:
+                                    f.write(content)
+
                     except Exception as e:
-                        logging.error(f"Error processing record: {e}")
+                        logging.error(f"Error processing text: {e}")
                         continue
-    
+
     except Exception as e:
         logging.error(f"Error processing WARC file: {e}")
-    
-    # Print final statistics
-    print("\nProcessing Complete!")
-    print(f"Total records processed: {stats['total_records']}")
-    print(f"Response records found: {stats['response_records']}")
-    print(f"HTML pages extracted: {stats['html_pages']}")
-    print(f"Other content types: {stats['other_content']}")
+
 
 if __name__ == "__main__":
     # Configure logging
     logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
-    
+
     # Your WARC file path
     warc_path = compressed_file
-    
+
     print(f"Starting extraction from {warc_path}")
     extract_html_pages(warc_path)
