@@ -11,6 +11,7 @@ BASE_MODEL = "Snowflake/snowflake-arctic-embed-m"
 QUALITY_MODELS = {
     "HuggingFaceTB/fineweb-edu-classifier": "fineweb-edu",
     "/home/cpondoc/research/embedding-preference-training/scratch/sample-run/final": "gb_wiki",
+    "/home/cpondoc/research/embedding-preference-training/scratch/random-vs-fineweb/final": "random_cc_fineweb",
 }
 
 # Also define the set of tasks
