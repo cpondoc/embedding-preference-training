@@ -14,6 +14,7 @@ BASE_MODEL = "Snowflake/snowflake-arctic-embed-m"
 #     "/home/cpondoc/research/embedding-preference-training/scratch/random-vs-fineweb/final": "random_cc_fineweb",
 # }
 QUALITY_MODELS = {
+    "gpt2": "gpt2",
     "nvidia/domain-classifier": "nvidia-dc",
 }
 
