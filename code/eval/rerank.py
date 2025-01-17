@@ -8,10 +8,13 @@ from sentence_transformers import SentenceTransformer
 
 # Define reranker, set of base models that we can change
 BASE_MODEL = "Snowflake/snowflake-arctic-embed-m"
+# QUALITY_MODELS = {
+#     "HuggingFaceTB/fineweb-edu-classifier": "fineweb-edu",
+#     "/home/cpondoc/research/embedding-preference-training/scratch/sample-run/final": "gb_wiki",
+#     "/home/cpondoc/research/embedding-preference-training/scratch/random-vs-fineweb/final": "random_cc_fineweb",
+# }
 QUALITY_MODELS = {
-    "HuggingFaceTB/fineweb-edu-classifier": "fineweb-edu",
-    "/home/cpondoc/research/embedding-preference-training/scratch/sample-run/final": "gb_wiki",
-    "/home/cpondoc/research/embedding-preference-training/scratch/random-vs-fineweb/final": "random_cc_fineweb",
+    "nvidia/domain-classifier": "nvidia-dc",
 }
 
 # Also define the set of tasks
@@ -35,4 +38,5 @@ for quality_p in [0.96, 0.97, 0.98, 0.99]:
                 output_folder="results/" + value + "/" + str(quality_p) + "/",
                 quality_p=quality_p,
                 quality_classifier=key,
+                classifier_normalization="top_k",
             )

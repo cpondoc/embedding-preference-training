@@ -10,7 +10,8 @@ class CustomModel(nn.Module, PyTorchModelHubMixin):
         self.dropout = nn.Dropout(config["fc_dropout"])
         self.fc = nn.Linear(self.model.config.hidden_size, len(config["id2label"]))
 
-    def forward(self, input_ids, attention_mask):
+    def forward(self, input_ids, attention_mask, **kwargs):  # Accept additional arguments
+        # Extract token_type_ids if present but ignore it
         features = self.model(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
         dropped = self.dropout(features)
         outputs = self.fc(dropped)
