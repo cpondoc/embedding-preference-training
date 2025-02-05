@@ -125,7 +125,7 @@ def extract_html_pages(warc_path, output_dir="data/random-cc"):
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     # all_urls = get_fineweb_urls()
-    all_urls = set()
+    # all_urls = set()
 
     # Open the WARC, iterate through each record
     try:
