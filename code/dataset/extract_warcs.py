@@ -3,6 +3,7 @@ Code to extract WARCs and use a random subset of them.
 """
 
 import fasttext
+import tarfile
 import requests
 import gzip
 import shutil
@@ -19,6 +20,16 @@ from collections import defaultdict
 from datasets import load_dataset
 from tqdm import tqdm
 
+
+def extract_tar_gz_files(blocklist_root, extract_dir):
+    """Recursively extract all .tar.gz files to a specific directory."""
+    for root, dirs, files in os.walk(blocklist_root):
+        for file in files:
+            if file.endswith('.tar.gz'):
+                tar_gz_path = os.path.join(root, file)
+                with tarfile.open(tar_gz_path, 'r:gz') as tar:
+                    tar.extractall(path=extract_dir)
+                print(f"Extracted: {tar_gz_path}")
 
 # Function to download a file
 def download_file(url, output_path):
@@ -115,7 +126,40 @@ def fasttext_english_filter(content: str):
         return True
     return False
 
-def extract_html_pages(warc_path, output_dir="data/random-cc"):
+def load_blocklist(blocklist_root):
+    """Load blocklisted domains and URLs from hierarchical folders."""
+    blocked_domains = set()
+    blocked_urls = set()
+
+    # Traverse blocklist folders (e.g., 'adult', 'ads', etc.)
+    for category in os.listdir(blocklist_root):
+        category_path = os.path.join(blocklist_root, category)
+
+        if not os.path.isdir(category_path):
+            continue  # Skip non-directory files
+
+        # Load domains
+        domain_file = os.path.join(category_path, "domains")
+        if os.path.exists(domain_file):
+            with open(domain_file, "r", encoding="utf-8") as f:
+                blocked_domains.update(line.strip() for line in f if line.strip())
+
+        # Load URLs
+        url_file = os.path.join(category_path, "URLs")
+        if os.path.exists(url_file):
+            with open(url_file, "r", encoding="utf-8") as f:
+                blocked_urls.update(line.strip() for line in f if line.strip())
+
+    return blocked_domains, blocked_urls
+
+def is_blocked(url, blocked_domains, blocked_urls):
+    """Check if a given URL is blocklisted based on domains or URLs."""
+    parsed_url = urlparse(url)
+    domain = parsed_url.netloc
+
+    return domain in blocked_domains or url in blocked_urls
+
+def extract_html_pages(warc_path, blocked_domains, blocked_urls, output_dir="data/random-cc"):
     """
     Extracting HTML pages and running data validation pipeline.
     """
@@ -149,8 +193,9 @@ def extract_html_pages(warc_path, output_dir="data/random-cc"):
 
                         # Use trafilatura to extract main content, check if English
                         content = trafilatura.extract(body)
-                        if content and fasttext_english_filter(content):
+                        if content and fasttext_english_filter(content) and not is_blocked(target_uri, blocked_domains, blocked_urls):
                             print(content)
+                            print(target_uri)
                             print("")
 
 
@@ -183,9 +228,15 @@ if __name__ == "__main__":
     # Downloading file
     warc_paths_url = "https://data.commoncrawl.org/" + path
     compressed_file = "data/common-crawl/" + path.split("/")[-1]
-    # download_file(warc_paths_url, compressed_file)
+    # download_file(warc_paths_url, compressed_file) # Run if we need to download files
+    print(f"Loaded in WARC file: {warc_paths_url}.")
+    
+    # Set up blocklist
+    # extract_tar_gz_files("data/blocklist/", "data/blocklist-unzip") # Run if we need to unzip blocklist
+    blocked_domains, blocked_urls = load_blocklist("data/blocklist-unzip")
+    print("Defined the blocklist.")
 
     # Extract HTML pages
     warc_path = compressed_file
     print(f"Starting extraction from {warc_path}")
-    extract_html_pages(warc_path)
+    extract_html_pages(warc_path, blocked_domains, blocked_urls)
