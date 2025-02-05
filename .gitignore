@@ -1,5 +1,7 @@
 # Bigger folders
 env/
 data/
+noisy-results/
+models/
 results/
 scratch/

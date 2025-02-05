@@ -2,6 +2,7 @@
 Code to extract WARCs and use a random subset of them.
 """
 
+import fasttext
 import requests
 import gzip
 import shutil
@@ -100,11 +101,31 @@ def get_fineweb_urls():
     all_urls.add(url)
     return all_urls
 
+def fasttext_english_filter(content: str):
+    """
+    Using similar Fineweb techniques to just filter out some noise.
+    """
+    # Define pre-trained fasttext model
+    model_path = "models/lid.176.bin"
+    model = fasttext.load_model(model_path)
+    
+    # Inference, and return (can tune 0.6 probability)
+    label, probability = model.predict(content, k=1)
+    if label[0] == "__label__en" and probability[0] > 0.6:
+        return True
+    return False
 
 def extract_html_pages(warc_path, output_dir="data/random-cc"):
+    """
+    Extracting HTML pages and running data validation pipeline.
+    """
+    model_path = "models/lid.176.bin"
+    model = fasttext.load_model(model_path)
+    
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
-    all_urls = get_fineweb_urls()
+    # all_urls = get_fineweb_urls()
+    all_urls = set()
 
     # Open the WARC, iterate through each record
     try:
@@ -128,17 +149,20 @@ def extract_html_pages(warc_path, output_dir="data/random-cc"):
 
                         # Use trafilatura to extract main content, check if English
                         content = trafilatura.extract(body)
-                        if content and is_english(content):
+                        if content and fasttext_english_filter(content):
+                            print(content)
+                            print("")
+
 
                             # Save to a file
-                            if target_uri not in all_urls:
-                                filename = clean_filename(target_uri)
-                                filepath = os.path.join(output_dir, filename)
-                                with open(filepath, "w", encoding="utf-8") as f:
-                                    f.write(content)
+                            # if target_uri not in all_urls:
+                            #     filename = clean_filename(target_uri)
+                            #     filepath = os.path.join(output_dir, filename)
+                            #     with open(filepath, "w", encoding="utf-8") as f:
+                            #         f.write(content)
 
                     except Exception as e:
-                        logging.error(f"Error processing text: {e}")
+                        # logging.error(f"Error processing text: {e}")
                         continue
 
     except Exception as e:
@@ -155,10 +179,13 @@ if __name__ == "__main__":
     # Process path of WARC into usable things.
     indices = get_warc_indices()
     path = indices[0]
+    
+    # Downloading file
     warc_paths_url = "https://data.commoncrawl.org/" + path
     compressed_file = "data/common-crawl/" + path.split("/")[-1]
-    warc_path = compressed_file
+    # download_file(warc_paths_url, compressed_file)
 
     # Extract HTML pages
+    warc_path = compressed_file
     print(f"Starting extraction from {warc_path}")
     extract_html_pages(warc_path)
