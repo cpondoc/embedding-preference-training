@@ -19,7 +19,7 @@ import re
 from collections import defaultdict
 from tqdm import tqdm
 import pandas as pd
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from tqdm import tqdm
 
 
@@ -174,13 +174,26 @@ def is_blocked(url, blocked_domains, blocked_urls):
     return domain in blocked_domains or url in blocked_urls
 
 
-def save_to_hf(warc_file_name, output_dir="data/noisy-cc"):
+def save_to_hf(warc_file_names, output_dir="data/noisy-cc", repo_id="cpondoc/noisy-cc"):
     """
-    Save to HuggingFace + delete file
+    Combine multiple CSV files into one, upload to Hugging Face, and delete the originals.
     """
-    dataset = load_dataset("csv", data_files=f"{output_dir}/{warc_file_name}.csv")
-    dataset.push_to_hub("cpondoc/noisy-cc")
-    os.remove(f"{output_dir}/{warc_file_name}.csv")
+    combined_df = pd.concat(
+        [pd.read_csv(f"{output_dir}/{file_name}.csv") for file_name in warc_file_names], 
+        ignore_index=True  # Prevent index conflicts
+    )
+
+    # Convert to Hugging Face dataset format
+    dataset = Dataset.from_pandas(combined_df)
+
+    # Upload to Hugging Face Hub
+    dataset.push_to_hub(repo_id)
+
+    # Delete original CSV files
+    for file_name in warc_file_names:
+        os.remove(f"{output_dir}/{file_name}.csv")
+
+    print(f"✅ Uploaded {repo_id} and deleted source files!")
 
 
 def extract_html_pages(
@@ -253,6 +266,8 @@ if __name__ == "__main__":
 
     # Process path of WARC into usable things.
     indices = get_warc_indices()
+    warc_file_names = []
+    compressed_files = []
     for index in range(1, 6):
         path = indices[index]
 
@@ -273,8 +288,13 @@ if __name__ == "__main__":
         warc_file_name = warc_file_name.split(".")[0]
         print(f"Starting extraction from {warc_path}")
         extract_html_pages(warc_path, blocked_domains, blocked_urls, warc_file_name)
+            
+        # Update state
+        warc_file_names.append(warc_file_names)
+        compressed_files.append(compressed_file)
 
-        # Save to HuggingFace + delete file
-        save_to_hf(warc_file_name)
+    # Save to HuggingFace + delete file
+    # save_to_hf(warc_file_names)
+    for compressed_file in compressed_files:
         if os.path.exists(compressed_file):
-            os.remove(compressed_file)
+                os.remove(compressed_file)
