@@ -17,6 +17,8 @@ import logging
 from datetime import datetime
 import re
 from collections import defaultdict
+from tqdm import tqdm
+import pandas as pd
 from datasets import load_dataset
 from tqdm import tqdm
 
@@ -153,28 +155,38 @@ def load_blocklist(blocklist_root):
     return blocked_domains, blocked_urls
 
 def is_blocked(url, blocked_domains, blocked_urls):
-    """Check if a given URL is blocklisted based on domains or URLs."""
+    """
+    Check if a given URL is blocklisted based on domains or URLs.
+    """
     parsed_url = urlparse(url)
     domain = parsed_url.netloc
 
     return domain in blocked_domains or url in blocked_urls
 
-def extract_html_pages(warc_path, blocked_domains, blocked_urls, output_dir="data/random-cc"):
+def save_to_hf(warc_file_name, output_dir="data/noisy-cc"):
+    """
+    Save to HuggingFace + delete file
+    """
+    dataset = load_dataset("csv", data_files=f"{output_dir}/{warc_file_name}.csv")
+    dataset.push_to_hub("cpondoc/noisy-cc")
+    os.remove(f"{output_dir}/{warc_file_name}.csv")
+
+def extract_html_pages(warc_path, blocked_domains, blocked_urls, warc_file_name, output_dir="data/noisy-cc"):
     """
     Extracting HTML pages and running data validation pipeline.
     """
-    model_path = "models/lid.176.bin"
-    model = fasttext.load_model(model_path)
     
-    # Create output directory
+    # Create output directory and CSV file name
     os.makedirs(output_dir, exist_ok=True)
+    data = []
     # all_urls = get_fineweb_urls()
     # all_urls = set()
 
     # Open the WARC, iterate through each record
     try:
         with open(warc_path, "rb") as stream:
-            for record in ArchiveIterator(stream):
+            total_records = sum(1 for _ in ArchiveIterator(stream))  # Count records first
+            for record in tqdm(ArchiveIterator(stream), total=total_records, desc="Processing WARC records"):
 
                 # Check if it's a response record
                 if record.rec_headers.get_header("WARC-Type") == "response":
@@ -194,17 +206,12 @@ def extract_html_pages(warc_path, blocked_domains, blocked_urls, output_dir="dat
                         # Use trafilatura to extract main content, check if English
                         content = trafilatura.extract(body)
                         if content and fasttext_english_filter(content) and not is_blocked(target_uri, blocked_domains, blocked_urls):
-                            print(content)
-                            print(target_uri)
-                            print("")
-
-
-                            # Save to a file
-                            # if target_uri not in all_urls:
-                            #     filename = clean_filename(target_uri)
-                            #     filepath = os.path.join(output_dir, filename)
-                            #     with open(filepath, "w", encoding="utf-8") as f:
-                            #         f.write(content)
+                            data.append(
+                                {
+                                    "url": target_uri,
+                                    "text": content
+                                }
+                            )
 
                     except Exception as e:
                         # logging.error(f"Error processing text: {e}")
@@ -212,9 +219,16 @@ def extract_html_pages(warc_path, blocked_domains, blocked_urls, output_dir="dat
 
     except Exception as e:
         logging.error(f"Error processing WARC file: {e}")
+    
+    # Save to a CSV file
+    df = pd.DataFrame(data)
+    df.to_csv(f"{output_dir}/{warc_file_name}.csv", index=False)
 
 
 if __name__ == "__main__":
+    """
+    Run all larger operations
+    """
 
     # Configure logging
     logging.basicConfig(
@@ -238,5 +252,10 @@ if __name__ == "__main__":
 
     # Extract HTML pages
     warc_path = compressed_file
+    warc_file_name = warc_path.split("/")[-1]
+    warc_file_name = warc_file_name.split(".")[0]
     print(f"Starting extraction from {warc_path}")
-    extract_html_pages(warc_path, blocked_domains, blocked_urls)
+    # extract_html_pages(warc_path, blocked_domains, blocked_urls, warc_file_name)
+    
+    # Save to HuggingFace
+    save_to_hf(warc_file_name)
