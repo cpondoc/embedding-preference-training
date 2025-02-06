@@ -3,6 +3,7 @@ from torch import nn
 from transformers import AutoModel, AutoTokenizer, AutoConfig
 from huggingface_hub import PyTorchModelHubMixin
 
+
 class CustomModel(nn.Module, PyTorchModelHubMixin):
     def __init__(self, config):
         super(CustomModel, self).__init__()
@@ -10,12 +11,17 @@ class CustomModel(nn.Module, PyTorchModelHubMixin):
         self.dropout = nn.Dropout(config["fc_dropout"])
         self.fc = nn.Linear(self.model.config.hidden_size, len(config["id2label"]))
 
-    def forward(self, input_ids, attention_mask, **kwargs):  # Accept additional arguments
+    def forward(
+        self, input_ids, attention_mask, **kwargs
+    ):  # Accept additional arguments
         # Extract token_type_ids if present but ignore it
-        features = self.model(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
+        features = self.model(
+            input_ids=input_ids, attention_mask=attention_mask
+        ).last_hidden_state
         dropped = self.dropout(features)
         outputs = self.fc(dropped)
         return torch.softmax(outputs[:, 0, :], dim=1)
+
 
 # Setup configuration and model
 config = AutoConfig.from_pretrained("nvidia/domain-classifier")
@@ -25,7 +31,9 @@ model.eval()
 
 # Prepare and process inputs
 text_samples = ["Sports is a popular domain", "Politics is a popular domain"]
-inputs = tokenizer(text_samples, return_tensors="pt", padding="longest", truncation=True)
+inputs = tokenizer(
+    text_samples, return_tensors="pt", padding="longest", truncation=True
+)
 outputs = model(inputs["input_ids"], inputs["attention_mask"])
 
 """
@@ -77,8 +85,9 @@ print("Top-K probabilities:", top_k_probs.detach().numpy())
 print("Top-K confidences:", top_k_confidences.detach().numpy())
 
 
-
 # Predict and display results
 predicted_classes = torch.argmax(outputs, dim=1)
-predicted_domains = [config.id2label[class_idx.item()] for class_idx in predicted_classes.cpu().numpy()]
+predicted_domains = [
+    config.id2label[class_idx.item()] for class_idx in predicted_classes.cpu().numpy()
+]
 print(predicted_domains)
